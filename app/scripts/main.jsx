@@ -1,29 +1,61 @@
+var $ = require('jquery')(window);
+var React = require('react');
+var marked = require('marked');
+var underscore = require('underscore');
+var Backbone = require('backbone');
+Backbone.LocalStorage = require('backbone.localstorage');
+window.App = {
+  Models: {},
+  Collections: {},
+  Router: {}
+};
+
+window.App.Models.Comment = Backbone.Model.extend({
+  defaults: {
+    author: 'John Doe',
+    text: '...'
+  }
+});
+
+window.App.Collections.Comments = Backbone.Collection.extend({
+  localStorage: new Backbone.LocalStorage('comments'),
+  model: window.App.Models.Comment
+});
+
+window.App.Router = Backbone.Router.extend({
+  routes: {
+    '': 'init'
+  },
+  init: function() {
+    var teste = new window.App.Collections.Comments();
+    teste.fetch().done(function(data) {
+      React.render(
+        <CommentBox data={data} collection={teste} pollInterval={2000} />,
+        document.getElementById('content')
+      );
+    });
+  }
+});
+
+function init() {
+  this.router = new window.App.Router();
+
+  Backbone.history.start({ pushstate: true, trigger: true, root: '/'});
+}
+
+
 var CommentBox = React.createClass({
   getInitialState: function() {
-    return {data: []};
-  },
-  loadComments: function() {
-    $.ajax({
-      url: this.props.url,
-      dataType: 'jsonp',
-      cache: false,
-      success: function(data) {
-        this.setState({data: data.comments});
-      }.bind(this),
-      error: function(xhr, status, err) {
-        console.error(this.props.url, status, err.toString());
-      }.bind(this)
-    });
+    return {data: this.props.data || []};
   },
   loadLocal: function() {
-    this.setState({ data: JSON.parse(localStorage.getItem('comments')) });
+    var that = this;
+    this.props.collection.fetch().done(function(data) {
+      that.setState({ data: data });
+    });
   },
   handleSubmit: function(comment) {
-    var comments = JSON.parse(localStorage.getItem('comments')) || [];
-
-    comments.push(comment);
-
-    localStorage.setItem('comments', JSON.stringify(comments));
+    this.props.collection.create(comment);
     this.loadLocal();
   },
   componentDidMount: function() {
@@ -105,7 +137,4 @@ var Comment = React.createClass({
   }
 });
 
-React.render(
-  <CommentBox url="http://www.mocky.io/v2/5592fed03c82b22510eea69c" pollInterval={2000} />,
-  document.getElementById('content')
-);
+init();

@@ -35,8 +35,8 @@ module.exports = function (grunt) {
         tasks: ['wiredep']
       },
       js: {
-        files: ['<%= config.app %>/scripts/{,*/}*.js'],
-        tasks: ['jshint'],
+        files: ['<%= config.app %>/scripts/{,*/}*.jsx'],
+        tasks: ['browserify', 'jshint'],
         options: {
           livereload: true
         }
@@ -119,6 +119,17 @@ module.exports = function (grunt) {
         }]
       },
       server: '.tmp'
+    },
+
+    browserify: {
+      dist: {
+        files: {
+          'app/scripts/bundle.js': ['app/scripts/main.jsx'],
+        },
+        options: {
+          transform: ['reactify']
+        }
+      }
     },
 
     // Make sure code styles are up to par and there are no obvious mistakes
@@ -339,6 +350,7 @@ module.exports = function (grunt) {
 
     grunt.task.run([
       'clean:server',
+      'browserify',
       'wiredep',
       'concurrent:server',
       'autoprefixer',
